@@ -18,32 +18,25 @@
 
 /*Kernel*/
 __global__ void matrixAdd(float a[], float b[], float c[], int N) {
-   int col = blockIdx.x * blockDim.x + threadIdx.x;
-   int row = blockIdx.y * blockDim.y + threadIdx.y;
-   int index = col + row * N;
-   if (col < N && row < N) {
+   int index = blockDim.x * blockIdx.x + threadIdx.x;
+
+   if (blockIdx.x < N && threadIdx.x < N) 
       c[index] = a[index] + b[index];
- }
 }
 __global__ void matrixAddRow(float a[], float b[], float c[], int N) {
-   int row = blockIdx.y * blockDim.y + threadIdx.y;
-   int index;
-   for(index = row * N; index < N; index++)
+   int index = blockDim.x * blockIdx.x + threadIdx.x;
+   for(index = index * N; index < N*N; index++)
    {
       c[index] = a[index] + b[index];
    }
 }
 __global__ void matrixAddColumn(float a[], float b[], float c[], int N) {
-   int col = blockIdx.x * blockDim.x + threadIdx.x;
-   int index;
-   for(index = col * N; index < N; index = index + N)
+   int index = blockDim.x * blockIdx.x + threadIdx.x;
+   for(; index < N*N; index = index + N)
    {
       c[index] = a[index] + b[index];
    }
 }
-
-
-
 
 void Read_matrix(float A[], int s) {
    int i, j;
@@ -95,11 +88,13 @@ int main(int argc, char* argv[]) {
    cudaMemcpy(dev_a, a, size, cudaMemcpyHostToDevice);
    cudaMemcpy(dev_b, b, size, cudaMemcpyHostToDevice);
 
-   dim3 dimBlock(BLOCK_DIM, BLOCK_DIM);
-   dim3 dimGrid((int)ceil(N/dimBlock.x),(int)ceil(N/dimBlock.y));
+//   dim3 dimBlock(BLOCK_DIM, BLOCK_DIM);
+//   dim3 dimGrid((int)ceil(N/dimBlock.x),(int)ceil(N/dimBlock.y));
 
-   matrixAdd<<<dimGrid,dimBlock>>>(dev_a,dev_b,dev_c,N);
-   /* Wait for the kernel to complete */
+//   matrixAddColumn<<<N,N>>>(dev_a,dev_b,dev_c,N);
+//   matrixAddRow<<<N,N>>>(dev_a,dev_b,dev_c,N);
+   matrixAdd<<<N,N>>>(dev_a,dev_b,dev_c,N);
+
    cudaThreadSynchronize();
 
    cudaMemcpy(c, dev_c, size, cudaMemcpyDeviceToHost);

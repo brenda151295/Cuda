@@ -21,12 +21,16 @@
 b is a vector
 c is a result (vector)*/
 __global__ void matrixVectMult(float a[], float b[], float c[], int N) {
-   int col = blockIdx.x * blockDim.x + threadIdx.x;
-   int row = blockIdx.y * blockDim.y + threadIdx.y;
-   int index = col + row * N;
-   if (col < N && row < N) {
-      c[row] = a[index] + b[row];
- }
+   int index = blockDim.x * blockIdx.x + threadIdx.x;
+   int i;
+   float sum = 0;
+   if(index < N)
+   {
+      for(i = 0; i < N; i++)
+         sum += a[(i*N)+index]*b[i];
+      c[index] = sum;   
+   }
+   
 }
 
 void Read_matrix(float A[], int s) {
@@ -98,14 +102,14 @@ int main(int argc, char* argv[]) {
    cudaMemcpy(dev_a, a, size_matrix, cudaMemcpyHostToDevice);
    cudaMemcpy(dev_b, b, size_vector, cudaMemcpyHostToDevice);
 
-   dim3 dimBlock(BLOCK_DIM, BLOCK_DIM);
-   dim3 dimGrid((int)ceil(N/dimBlock.x),(int)ceil(N/dimBlock.y));
+//   dim3 dimBlock(BLOCK_DIM, BLOCK_DIM);
+ //  dim3 dimGrid((int)ceil(N/dimBlock.x),(int)ceil(N/dimBlock.y));
 
-   matrixVectMult<<<dimGrid,dimBlock>>>(dev_a,dev_b,dev_c,N);
+   matrixVectMult<<<N,N>>>(dev_a,dev_b,dev_c,N);
    /* Wait for the kernel to complete */
-   cudaThreadSynchronize();
+   //cudaThreadSynchronize();
 
-   cudaMemcpy(c, dev_c, size_matrix, cudaMemcpyDeviceToHost);
+   cudaMemcpy(c, dev_c, size_vector, cudaMemcpyDeviceToHost);
    Print_vector("Result =", c, N);
 
    cudaFree(dev_a);
